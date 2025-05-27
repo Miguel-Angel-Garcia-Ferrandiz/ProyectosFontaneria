@@ -1,0 +1,148 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos - Fontanería</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-gray-800 text-white p-4">
+        <ul class="flex space-x-6 justify-center">
+            <li><a href="registro.html" class="hover:underline">Registro</a></li>
+            <li><a href="index.html" class="hover:underline">Inicio de Sesión</a></li>
+            <li><a href="solicitud.html" class="hover:underline">Solicitud de Servicio</a></li>
+            <li><a href="productos.html" class="underline">Gestión de Productos</a></li>
+            <li><a href="catalogo.html" class="hover:underline">Catálogo</a></li>
+            <li><a href="perfil.html" class="hover:underline">Perfil</a></li>
+        </ul>
+    </nav>
+    <section class="p-6 max-w-4xl mx-auto bg-white rounded shadow-lg mt-4">
+        <h2 class="text-2xl font-bold mb-4">Gestión de Productos</h2>
+        <!-- Formulario para Crear/Actualizar -->
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-2" id="form-title">Añadir Producto</h3>
+            <form id="producto-form" class="space-y-4">
+                <input type="hidden" id="prod-id">
+                <div>
+                    <label class="block text-sm font-medium">Nombre:</label>
+                    <input type="text" id="prod-nombre" class="w-full p-2 border rounded" required />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Descripción:</label>
+                    <textarea id="prod-descripcion" class="w-full p-2 border rounded"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Precio:</label>
+                    <input type="number" step="0.01" id="prod-precio" class="w-full p-2 border rounded" required />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Stock:</label>
+                    <input type="number" id="prod-stock" class="w-full p-2 border rounded" required />
+                </div>
+                <button type="button" onclick="simularGuardarProducto()" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600" id="form-button">Guardar Producto</button>
+            </form>
+        </div>
+        <!-- Tabla para Leer y Eliminar -->
+        <h3 class="text-xl font-semibold mb-2">Lista de Productos</h3>
+        <table class="w-full border-collapse" id="productos-table">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="border p-2">ID</th>
+                    <th class="border p-2">Nombre</th>
+                    <th class="border p-2">Descripción</th>
+                    <th class="border p-2">Precio</th>
+                    <th class="border p-2">Stock</th>
+                    <th class="border p-2">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Datos simulados -->
+                <tr>
+                    <td class="border p-2">1</td>
+                    <td class="border p-2">Tubería PVC</td>
+                    <td class="border p-2">Tubería de 50mm</td>
+                    <td class="border p-2">10.50</td>
+                    <td class="border p-2">100</td>
+                    <td class="border p-2">
+                        <a href="#" onclick="simularEditarProducto(1, 'Tubería PVC', 'Tubería de 50mm', 10.50, 100)" class="text-blue-500 hover:underline mr-2">Editar</a>
+                        <a href="#" onclick="simularEliminarProducto(1)" class="text-red-500 hover:underline">Eliminar</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+    <script>
+        function simularGuardarProducto() {
+            const id = document.getElementById('prod-id').value;
+            const nombre = document.getElementById('prod-nombre').value;
+            const descripcion = document.getElementById('prod-descripcion').value;
+            const precio = document.getElementById('prod-precio').value;
+            const stock = document.getElementById('prod-stock').value;
+            if (nombre && precio && stock) {
+                alert(id ? `Producto ${id} actualizado: ${nombre}` : `Producto creado: ${nombre}`);
+                document.getElementById('producto-form').reset();
+                document.getElementById('prod-id').value = '';
+                document.getElementById('form-title').textContent = 'Añadir Producto';
+                document.getElementById('form-button').textContent = 'Guardar Producto';
+            } else {
+                alert('Por favor, completa los campos obligatorios.');
+            }
+        }
+        function simularEditarProducto(id, nombre, descripcion, precio, stock) {
+            document.getElementById('prod-id').value = id;
+            document.getElementById('prod-nombre').value = nombre;
+            document.getElementById('prod-descripcion').value = descripcion;
+            document.getElementById('prod-precio').value = precio;
+            document.getElementById('prod-stock').value = stock;
+            document.getElementById('form-title').textContent = 'Editar Producto';
+            document.getElementById('form-button').textContent = 'Actualizar Producto';
+        }
+        function simularEliminarProducto(id) {
+            if (confirm('¿Estás seguro de eliminar el producto ' + id + '?')) {
+                alert('Producto ' + id + ' eliminado.');
+            }
+        }
+    </script>
+</body>
+</html>

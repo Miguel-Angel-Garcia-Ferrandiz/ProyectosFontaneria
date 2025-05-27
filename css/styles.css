@@ -1,0 +1,17 @@
+/* Estilos personalizados para el prototipo */
+body {
+    font-family: Arial, sans-serif;
+}
+
+nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+section {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
